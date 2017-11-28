@@ -1,0 +1,130 @@
+﻿数据库说明管理
+炮桶子 
+      2017-08-31
+
+
+必须在数据库下增加以下2个视图和存储过程
+##################################################################### 查询整个数据表 #########################################################################
+create view [dbo].[db_talbe_list]
+as
+SELECT TableName = case when a.colorder = 1 then d.name   else '' end,  ColumnsDetail = case when a.colorder = 1 then isnull(f.value, '')  else '' end FROM syscolumns a  
+inner join sysobjects d  on a.id = d.id   and d.xtype = 'U'   and d.name <> 'sys.extended_properties' 
+left join sys.extended_properties   f  on a.id = f.major_id  and f.minor_id = 0 Where (case when a.colorder = 1 then d.name else '' end) <>'' 
+--order by tableName 
+GO
+
+
+##################################################################### 查询单个表所有列 #########################################################################
+create view [dbo].[db_talbe_columns]
+as
+SELECT 
+    TableName =d.name ,
+    TableDescription= isnull(f.value,'') ,
+    No   = a.colorder,
+    FieldName     = a.name,
+    FieldDescription   = isnull(g.[value],''),
+	IsIdenttity       = case when COLUMNPROPERTY( a.id,a.name,'IsIdentity')=1 then '1'else '0' end,
+    PrimarKey       = case when exists(SELECT 1 FROM sysobjects where xtype='PK' and parent_obj=a.id and name in (
+                     SELECT name FROM sysindexes WHERE indid in( SELECT indid FROM sysindexkeys WHERE id = a.id AND colid=a.colid))) then '1' else '0' end,
+    FieldType       = b.name,
+    FieldLength = a.length,
+    Length       = COLUMNPROPERTY(a.id,a.name,'PRECISION'),
+    NumberLength   = isnull(COLUMNPROPERTY(a.id,a.name,'Scale'),0),
+    IsNull     = case when a.isnullable=1 then '1'else '0' end,
+    DefaultValue     = isnull(e.text,'')    
+FROM   syscolumns a left join   systypes b  on   a.xusertype=b.xusertype
+inner join  sysobjects d on  a.id=d.id  and d.xtype='U' and  d.name<>'dtproperties'
+left join  syscomments e on   a.cdefault=e.id
+left join sys.extended_properties   g on  a.id=G.major_id and a.colid=g.minor_id  
+left join sys.extended_properties f on  d.id=f.major_id and f.minor_id=0
+--where  d.name like ''+@ConditionField+''    --如果只查询指定表,加上此条件
+--order by  d.name,a.id,a.colorder
+        
+--显示架构下所有表的描述属性  
+--SELECT objtype, objname, value , name
+--FROM fn_listextendedproperty (NULL, 'schema', 'dbo', 'table', default, NULL, NULL);
+
+--EXEC sp_helptext fn_listextendedproperty
+---显示表下所有列的描述属性 
+--SELECT objtype, objname,  value ,name
+--FROM fn_listextendedproperty(NULL, 'schema', 'dbo', 'table', 'jobs', 'column', default);
+GO
+
+
+
+##################################################################### 增加备注 #########################################################################
+/*
+    2017年8月30日22:14:03
+	炮桶子
+	如果属性存在，给属性更新描述
+	如果属性不存在，给属性添加描述
+*/
+CREATE proc [dbo].[db_detail_add]
+(
+@TableName varchar(100),
+@ColumnName varchar(50),
+@DaTail varchar(500),
+@TypeId int, --1表描述 2列表描述
+@Result int output 
+) 
+as
+DECLARE @tran_error int;
+IF(@TypeId=1)
+BEGIN
+	set @tran_error=0
+	BEGIN TRAN     --开始事务
+	BEGIN TRY 
+	IF EXISTS(select * from sysobjects as d where d.xtype = 'U'   and d.name <> 'sys.extended_properties' and name=@TableName)
+	BEGIN
+	 EXEC sp_updateextendedproperty  'MS_Description',@DaTail,'user',dbo,'table',@TableName
+	END
+	ELSE
+	BEGIN
+	 EXEC sp_addextendedproperty  'MS_Description',@DaTail,'user',dbo,'table',@TableName
+	END
+	END TRY
+	BEGIN CATCH
+	 set @tran_error=1
+	END CATCH
+	IF @tran_error > 0
+	BEGIN
+	set @Result=1
+		rollback tran 
+	END
+	ELSE
+	BEGIN
+	set @Result=0
+		commit tran 
+	END
+END
+ELSE IF(@TypeId=2)
+BEGIN
+	set @tran_error=0
+	BEGIN TRAN     --开始事务
+	BEGIN TRY 
+	IF EXISTS(SELECT *  from syscolumns as a join sys.extended_properties as g on a.id=G.major_id and a.colid=g.minor_id where id=object_id(@TableName) and a.name=@ColumnName)
+	BEGIN
+	EXECUTE   sp_updateextendedproperty   N'MS_Description',@DaTail,N'user',N'dbo',N'table',@TableName,N'column',@ColumnName 
+	END
+	ELSE
+	BEGIN
+	EXECUTE   sp_addextendedproperty   N'MS_Description',@DaTail,N'user',N'dbo',N'table',@TableName,N'column',@ColumnName 
+	END
+	END TRY
+	BEGIN CATCH
+    
+	 set @tran_error=1
+	END CATCH
+	IF @tran_error > 0
+	BEGIN
+	  set @Result=1
+		rollback tran 
+	END
+	ELSE
+	BEGIN
+	  set @Result=0
+		commit tran 
+	END
+END
+
+GO

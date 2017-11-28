@@ -1,0 +1,154 @@
+﻿@{
+    ViewBag.Title = "数据库管理";
+}
+<script src="~/Scripts/laytpl/laytpl.js"></script>
+<script src="~/Scripts/layer/layer.js"></script>
+<script src="~/Scripts/Comm.js"></script>
+<div class="container">
+    <h3>@Html.Raw("数据库管理</br>")</h3>
+    <br />
+    <ol class="breadcrumb">
+        <li class="active">首页</li>
+    </ol>
+    <form action="">
+        <div class="hr-line-dashed"></div>
+        <div class="btn-content">
+            <div class="row">
+                <div class="col-md-6">
+                </div>
+                <div class="col-md-6 text-right">
+                    <div class="btn-group" role="group" aria-label="...">
+                        <a href="/db/document" class="btn btn-info btn-sm" style="margin-right:80px;"><i class="icon-xiazai1 iconfont"></i>下载文档</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    <div class="main_bd" style="min-height:700px;">
+        <table class="table table-striped" width="951">
+            <thead>
+                <tr>
+                    <th class="table_cell " width="163" valign="top" style="word-break: break-all;"><span style="font-family: arial, helvetica, sans-serif;"><strong><span style="font-family: 微软雅黑, 'Microsoft YaHei';">表名</span><span class="Apple-tab-span" style="font-family: 微软雅黑, 'Microsoft YaHei'; white-space: pre;">	</span></strong></span></th>
+                    <th class="table_cell " width="200" valign="top" style="word-break: break-all;"><span style="font-family: arial, helvetica, sans-serif;"><strong><span style="font-family: 微软雅黑, 'Microsoft YaHei';">描述</span></strong></span></th>
+                    <th class="table_cell text-center" width="100" valign="top" style="word-break: break-all;"><span style="font-family: arial, helvetica, sans-serif;"><strong><span style="font-family: 微软雅黑, 'Microsoft YaHei';">操作</span></strong></span></th>
+                </tr>
+            </thead>
+            <tbody class="tbody" id="bodyList" >
+          
+
+            </tbody>
+        </table>
+    </div>
+</div>
+@*列表模板*@
+<script type="text/html" id="tp_data">
+    {{# for(var i = 0, len = d.Table.length; i < len; i++){ }}
+    <tr data-desc="{{d.Table[i].ColumnsDetail}}" id="{{d.Table[i].TableName}}">
+        <td class="text-left">{{d.Table[i].TableName}}</td>
+        <td class="text-left desc">{{d.Table[i].ColumnsDetail}}</td>
+        <td class="text-center btn_edit" data-id="{{d.Table[i].TableName}}">
+            <a class="btn btn-info btn-xs" href="javascript:" role="button" data-cell="edit"><i class="iconfont icon-bianji " style="font-size:12px;"></i>&nbsp;&nbsp;编辑</a>&nbsp;&nbsp;
+            <a class="btn btn-info btn-xs" href="javascript:" role="button" data-cell="detail"><i class="iconfont icon-xiangqing" style="font-size:12px;"></i>&nbsp;&nbsp;详情</a>&nbsp;&nbsp;
+        </td>
+    </tr>
+    {{# } }}
+
+</script>
+@*弹框填写备注*@
+<script type="text/html" id="tp_desc">
+    <div style="width:100%; overflow:hidden; padding: 10px 20px;">
+        <input type="hidden" value="" id="HTableName" />
+        <div class="modal-header text-center " style="margin-bottom:10px;">
+            <h4 class="modal-title" id="myModalLabel" style="font-weight:bold;">请填写备注</h4>
+        </div>
+        <div class="row">
+            <div class="col-md-12"><textarea class="form-control" rows="3" style="height:380px;" id="tableDesc"></textarea></div>
+        </div>
+        <div style="border-top:1px solid #e5e5e5; margin-top:10px;">
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <div style="padding:10px;">
+                        <a class="btn btn-info btn-sm btn_desc" href="javascript:" role="button" data-cell="ok"><i class="iconfont icon-baocun " style="font-size:12px;"></i>&nbsp;&nbsp;提交</a>&nbsp;&nbsp;
+                        <a class="btn btn-info btn-sm btn_desc" href="javascript:" role="button" data-cell="cannce"><i class="iconfont icon-quxiao" style="font-size:12px;"></i>&nbsp;&nbsp;取消</a>&nbsp;&nbsp;
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</script>
+
+<script type="text/javascript">
+    $(function () {
+
+      
+
+
+        (function () {
+
+            var data = @Html.Raw(ViewBag.PageData);
+            var gettpl = document.getElementById('tp_data').innerHTML;
+            console.log(data);
+            laytpl(gettpl).render(data, function (html) {
+                document.getElementById('bodyList').innerHTML = html;
+
+
+            });
+        })();
+
+        //弹框事件
+        (function(){
+            $(document).on('click','.btn_desc',function(){
+                var cell=$(this).data('cell');
+                var that=this;
+                if(cell=='ok'){
+                    var tabelName=$('#HTableName').val();
+                    _Ajax('/Db/AddTableDatil',{TableName:$('#HTableName').val(),Detail:$('#tableDesc').val()},function(data){
+                        layer.close(window.laydesc);
+                        if(data.code==0){
+                            $('#'+tabelName).data('desc',data.data);
+                            $('#'+tabelName+">td").eq(1).text(data.data);
+                        }else{
+                            alert(data.msg);
+                        }
+                    },function(err){
+
+                    })
+                }else if(cell=='cannce'){
+                    layer.close( window.laydesc);
+                }
+            });
+        })();
+
+        //列表事件
+
+            (function(){
+                $(document).on('click','.btn_edit a',function(){
+                    var cell=$(this).data('cell');
+                    if(cell=='edit'){
+                        window.laydesc= layer.open({
+                            type: 1,
+                            title: false,
+                            closeBtn: 0,
+                            area: ['700px', '530px'],
+                            shadeClose: true,
+                            skin: 'yourclass',
+                            content:$('#tp_desc').html()
+                        });
+
+                        $('#tableDesc').val($(this).parents('tr').data('desc'));
+                        $('#HTableName').val($(this).parents('tr').attr('id'));
+                    }else if(cell=='detail'){
+                        location.href="/Db/Detail?TableName="+$(this).parents('tr').attr('id');
+
+                    }
+                });
+            })();
+
+
+
+    });
+
+
+
+</script>

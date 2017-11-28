@@ -1,0 +1,107 @@
+﻿@{
+    ViewBag.Title = "数据库管理";
+    System.Data.DataTable dt = (System.Data.DataTable)ViewBag.Data;
+    
+}
+<script src="~/Scripts/layer/layer.js"></script>
+<div class="container">
+    <h3>@Html.Raw("数据库管理</br><small class=\"text-right\"><a href=\"/Db/index\" ><mark>前往2.0 Beta版</a></mark></small>")</h3>
+    <br />
+    <ol class="breadcrumb">
+        <li class="active">首页</li>
+    </ol>
+    <div class="main_bd" style="min-height:700px;">
+        <table class="table table-striped" width="951">
+            <tbody class="tbody">
+                <tr class="firstRow thead">
+                    <td class="table_cell " width="163" valign="top" style="word-break: break-all;"><span style="font-family: arial, helvetica, sans-serif;"><strong><span style="font-family: 微软雅黑, 'Microsoft YaHei';">表名</span><span class="Apple-tab-span" style="font-family: 微软雅黑, 'Microsoft YaHei'; white-space: pre;">	</span></strong></span></td>
+                    <td class="table_cell " width="200" valign="top" style="word-break: break-all;"><span style="font-family: arial, helvetica, sans-serif;"><strong><span style="font-family: 微软雅黑, 'Microsoft YaHei';">描述</span></strong></span></td>
+                    <td class="table_cell text-center" width="100" valign="top" style="word-break: break-all;"><span style="font-family: arial, helvetica, sans-serif;"><strong><span style="font-family: 微软雅黑, 'Microsoft YaHei';">操作</span></strong></span></td>
+                </tr>
+                @foreach (System.Data.DataRow item in dt.Rows)
+                {
+                    <tr id="@item["TableName"]" >
+
+                        <td class="table_cell" valign="top" style="word-break: break-all;"><span style="font-family: arial, helvetica, sans-serif;">@item["TableName"]</span></td>
+                        <td class="table_cell" valign="top" style="word-break: break-all;"><span style="font-family: arial, helvetica, sans-serif;">@item["ColumnsDetail"]</span></td>
+                        <td class="table_cell text-center" valign="top" style="word-break: break-all;">
+                            <a href="javascript:" data-toggle="modal" data-target="#myModal" data-tablemae="@item["TableName"]" data-detail="@item["ColumnsDetail"]">编辑说明</a>
+                            &nbsp;&nbsp;  <a href="/Home/Detail?OrderName=@item["TableName"]">详情</a>
+                        </td>
+                    </tr>
+                }
+
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form action="/Home/Post" method="post">
+                <input type="hidden" name="TableName" id="TableName">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+                </div>
+                <div class="modal-body">
+                   
+                    <div class="form-group">
+                        <label for="recipient-name" class="control-label">请输入表的描述:</label>
+                        <textarea class="form-control" rows="8" name="Detail"></textarea>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取 消</button>
+                    <button type="button" class="btn btn-primary" id="btnSend">保 存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    $(function () {
+        (function () {
+            //示范一个公告层
+            layer.open({
+                type: 1
+              , title: false //不显示标题栏
+              , closeBtn: false
+              , area: '300px;'
+              , shade: 0.8
+              , id: 'LAY_layuipro' //设定一个id，防止重复弹出
+              , resize: false
+              , btn: ['火速围观', '以后再说']
+              , btnAlign: 'c'
+              , moveType: 1 //拖拽模式，0或者1
+              , content: '<div style="padding: 50px; line-height: 22px; background-color: #393D49; color: #fff; font-weight: 300;text-align: center;">2.0 Beta版</div>'
+              , success: function (layero) {
+                  var btn = layero.find('.layui-layer-btn');
+                  btn.find('.layui-layer-btn0').attr({
+                      href: '/db/index'
+                    , target: '_blank'
+                  });
+              }
+            });
+        })();
+
+        $('#myModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget)
+            var tablemae = button.data('tablemae');
+            var modal = $(this);
+            modal.find('.modal-title').text(tablemae);
+            modal.find('.modal-body textarea').val(button.data('detail'));
+            $('#TableName').val(tablemae);
+            $('.modal-body input').focus();
+        })
+        $(document).on('click', '#btnSend', function () {
+             
+        });
+
+    });
+
+</script>
