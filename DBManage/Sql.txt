@@ -53,8 +53,10 @@ GO
 
 
 ##################################################################### 增加备注 #########################################################################
+
 /*
     2017年8月30日22:14:03
+	炮桶子
 	如果属性存在，给属性更新描述
 	如果属性不存在，给属性添加描述
 */
@@ -73,7 +75,7 @@ BEGIN
 	set @tran_error=0
 	BEGIN TRAN     --开始事务
 	BEGIN TRY 
-	IF EXISTS(select * from sysobjects as d where d.xtype = 'U'   and d.name <> 'sys.extended_properties' and name=@TableName)
+	IF EXISTS(SELECT  TableName = case when a.colorder = 1 then d.name   else '' end,  ColumnsDetail = case when a.colorder = 1 then isnull(f.value, '')  else '' end FROM syscolumns a  inner join sysobjects d  on a.id = d.id   and d.xtype = 'U'   and d.name <> 'sys.extended_properties' left join sys.extended_properties   f  on a.id = f.major_id  and f.minor_id = 0 Where (case when a.colorder = 1 then d.name else '' end) <>'' and d.name=@TableName and  f.value is not null)
 	BEGIN
 	 EXEC sp_updateextendedproperty  'MS_Description',@DaTail,'user',dbo,'table',@TableName
 	END
@@ -125,5 +127,6 @@ BEGIN
 		commit tran 
 	END
 END
+
 
 GO
